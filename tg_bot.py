@@ -7,7 +7,6 @@ from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import (Updater, CommandHandler, MessageHandler,
                           Filters, CallbackContext, ConversationHandler)
 
-# Enable logging
 logger = logging.getLogger(__name__)
 
 QUESTION, CHECK_QUESTION_ANSWER = range(2)
