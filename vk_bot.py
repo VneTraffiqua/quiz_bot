@@ -18,6 +18,7 @@ if __name__ == '__main__':
     env = Env()
     env.read_env()
     vk_token = env.str('VK_TOKEN')
+    questions_file = env.str('PATH_QUESTIONS_FILE', './questions.json')
     redis_host = env.str('REDIS_HOST')
     redis_port = env.str('REDIS_PORT')
     redis_pass = env.str('REDIS_PASS')
@@ -42,7 +43,7 @@ if __name__ == '__main__':
             if event.text == "Сдаться":
                 question = redis_connect.get(event.user_id).decode(
                     'utf-8')
-                with open('./questions.json') as questions:
+                with open(questions_file) as questions:
                     questions = json.loads(questions.read())
                     answer = questions[question]
                 vk_api.messages.send(
@@ -53,7 +54,7 @@ if __name__ == '__main__':
                     keyboard=keyboard.get_keyboard()
                 )
             elif event.text == "Новый вопрос":
-                with open('./questions.json') as questions:
+                with open(questions_file) as questions:
                     questions = json.loads(questions.read())
                     question = random.choice(list(questions))
                 vk_api.messages.send(
@@ -66,7 +67,7 @@ if __name__ == '__main__':
             else:
                 question = redis_connect.get(event.user_id).decode(
                     'utf-8')
-                with open('./questions.json') as questions:
+                with open(questions_file) as questions:
                     questions = json.loads(questions.read())
                     answer = questions[question].split('.')[0]
                     if event.text == answer:

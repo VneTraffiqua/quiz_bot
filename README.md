@@ -31,6 +31,8 @@ Then use `pip` (or `pip3`, if there is a conflict with Python2) to install depen
 
     `REDIS_PASS` - Password to connect to the Redis database
 
+   `PATH_QUESTIONS_FILE` - Path to the question file
+
 ## Launch.
 
 Launch telegram bot:
