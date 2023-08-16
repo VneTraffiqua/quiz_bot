@@ -33,6 +33,8 @@ Then use `pip` (or `pip3`, if there is a conflict with Python2) to install depen
 
    `PATH_QUESTIONS_FILE` - Path to the question file
 
+   `QUESTIONS_PATH` - Relative path to the folder with questions
+
 ## Launch.
 
 Launch telegram bot:
