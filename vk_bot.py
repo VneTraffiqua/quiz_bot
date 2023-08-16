@@ -10,6 +10,58 @@ import redis
 logger = logging.getLogger(__name__)
 
 
+def handle_new_questions(questions_file):
+    with open(questions_file) as questions:
+        questions = json.loads(questions.read())
+        question = random.choice(list(questions))
+    vk_api.messages.send(
+        user_id=event.user_id,
+        message=question,
+        random_id=random.randint(1, 1000),
+        keyboard=keyboard.get_keyboard()
+    )
+    redis_connect.set(event.user_id, question)
+
+
+def handle_losing_attempt(questions_file):
+    question = redis_connect.get(event.user_id).decode(
+        'utf-8')
+    with open(questions_file) as questions:
+        questions = json.loads(questions.read())
+        answer = questions[question]
+    vk_api.messages.send(
+        user_id=event.user_id,
+        message=f'Верный ответ: {answer}'
+                f'\nЧто бы продолжить, нажми "Новый вопрос"',
+        random_id=random.randint(1, 1000),
+        keyboard=keyboard.get_keyboard()
+    )
+
+
+def handle_solution_attempt(questions_file):
+    question = redis_connect.get(event.user_id).decode(
+        'utf-8')
+    with open(questions_file) as questions:
+        questions = json.loads(questions.read())
+        answer = questions[question].split('.')[0]
+        if event.text == answer:
+            vk_api.messages.send(
+                user_id=event.user_id,
+                message='Верно'
+                        'Что бы продолжить, нажми "Новый вопрос"',
+                random_id=random.randint(1, 1000),
+                keyboard=keyboard.get_keyboard()
+            )
+        else:
+            vk_api.messages.send(
+                user_id=event.user_id,
+                message='Не верно'
+                        'Что бы продолжить, нажми "Новый вопрос"',
+                random_id=random.randint(1, 1000),
+                keyboard=keyboard.get_keyboard()
+            )
+
+
 if __name__ == '__main__':
     logging.basicConfig(
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -41,48 +93,8 @@ if __name__ == '__main__':
     for event in longpoll.listen():
         if event.type == VkEventType.MESSAGE_NEW and event.to_me:
             if event.text == "Сдаться":
-                question = redis_connect.get(event.user_id).decode(
-                    'utf-8')
-                with open(questions_file) as questions:
-                    questions = json.loads(questions.read())
-                    answer = questions[question]
-                vk_api.messages.send(
-                    user_id=event.user_id,
-                    message=f'Верный ответ: {answer}'
-                            f'\nЧто бы продолжить, нажми "Новый вопрос"',
-                    random_id=random.randint(1, 1000),
-                    keyboard=keyboard.get_keyboard()
-                )
+                handle_losing_attempt(questions_file)
             elif event.text == "Новый вопрос":
-                with open(questions_file) as questions:
-                    questions = json.loads(questions.read())
-                    question = random.choice(list(questions))
-                vk_api.messages.send(
-                    user_id=event.user_id,
-                    message=question,
-                    random_id=random.randint(1, 1000),
-                    keyboard=keyboard.get_keyboard()
-                )
-                redis_connect.set(event.user_id, question)
+                handle_new_questions(questions_file)
             else:
-                question = redis_connect.get(event.user_id).decode(
-                    'utf-8')
-                with open(questions_file) as questions:
-                    questions = json.loads(questions.read())
-                    answer = questions[question].split('.')[0]
-                    if event.text == answer:
-                        vk_api.messages.send(
-                            user_id=event.user_id,
-                            message='Верно'
-                                    'Что бы продолжить, нажми "Новый вопрос"',
-                            random_id=random.randint(1, 1000),
-                            keyboard=keyboard.get_keyboard()
-                        )
-                    else:
-                        vk_api.messages.send(
-                            user_id=event.user_id,
-                            message='Не верно'
-                                    'Что бы продолжить, нажми "Новый вопрос"',
-                            random_id=random.randint(1, 1000),
-                            keyboard=keyboard.get_keyboard()
-                        )
+                handle_solution_attempt(questions_file)
