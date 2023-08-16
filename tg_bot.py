@@ -27,9 +27,9 @@ def start(update: Update, context: CallbackContext) -> None:
 
 
 def handle_new_question_request(
-        update: Update, context: CallbackContext, redis_connect
+        update: Update, context: CallbackContext, redis_connect, questions_file
 ) -> None:
-    with open('./questions.json') as questions:
+    with open(questions_file) as questions:
         questions = json.loads(questions.read())
         question = random.choice(list(questions))
         update.message.reply_text(question)
@@ -38,10 +38,10 @@ def handle_new_question_request(
 
 
 def handle_solution_attempt(
-        update: Update, context: CallbackContext, redis_connect
+        update: Update, context: CallbackContext, redis_connect, questions_file
 ):
     question = redis_connect.get(update.effective_chat.id).decode('utf-8')
-    with open('./questions.json') as questions:
+    with open(questions_file) as questions:
         questions = json.loads(questions.read())
         answer = questions[question].split('.')[0]
         if update.message.text == answer:
@@ -56,10 +56,10 @@ def handle_solution_attempt(
 
 
 def handle_losing_attempt(
-        update: Update, context: CallbackContext, redis_connect
+        update: Update, context: CallbackContext, redis_connect, questions_file
 ):
     question = redis_connect.get(update.effective_chat.id).decode('utf-8')
-    with open('./questions.json') as questions:
+    with open(questions_file) as questions:
         questions = json.loads(questions.read())
         answer = questions[question]
         update.message.reply_text(
@@ -73,6 +73,14 @@ def main() -> None:
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         level=logging.INFO
     )
+
+    env = Env()
+    env.read_env()
+    tg_token = env.str('TG_TOKEN')
+    questions_file = env.str('PATH_QUESTIONS_FILE', './questions.json')
+    redis_host = env.str('REDIS_HOST')
+    redis_port = env.str('REDIS_PORT')
+    redis_pass = env.str('REDIS_PASS')
 
     pool = redis.ConnectionPool(
         host=redis_host, port=redis_port, db=0, password=redis_pass
@@ -89,7 +97,7 @@ def main() -> None:
             MessageHandler(
                 Filters.text('Новый вопрос') & ~Filters.command,
                 lambda update, context: handle_new_question_request(
-                    update, context, redis_connect
+                    update, context, redis_connect, questions_file
                 )
             )
         ],
@@ -98,7 +106,7 @@ def main() -> None:
                 MessageHandler(
                     Filters.text('Новый вопрос') & ~Filters.command,
                     lambda update, context: handle_new_question_request(
-                        update, context, redis_connect
+                        update, context, redis_connect, questions_file
                     )
                 )
             ],
@@ -106,13 +114,13 @@ def main() -> None:
                 MessageHandler(
                     Filters.text & ~Filters.text('Сдаться'),
                     lambda update, context: handle_solution_attempt(
-                    update, context, redis_connect
+                    update, context, redis_connect, questions_file
                     )
                 ),
                 MessageHandler(
                     Filters.text('Сдаться') & ~Filters.command,
                     lambda update, context: handle_losing_attempt(
-                        update, context, redis_connect
+                        update, context, redis_connect, questions_file
                     )
                 ),
             ],
@@ -127,13 +135,4 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    env = Env()
-    env.read_env()
-    tg_token = env.str('TG_TOKEN')
-    tg_logger_token = env.str('TELEGRAM_LOGGER_TOKEN')
-    redis_host = env.str('REDIS_HOST')
-    redis_port = env.str('REDIS_PORT')
-    redis_pass = env.str('REDIS_PASS')
     main()
-
-
