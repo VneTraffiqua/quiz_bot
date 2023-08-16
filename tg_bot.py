@@ -33,37 +33,38 @@ def handle_new_question_request(
         question = random.choice(list(questions))
         update.message.reply_text(question)
         redis_connect.set(update.effective_chat.id, question)
+        redis_connect.set(
+            f'{update.effective_chat.id}-answer', questions[question]
+        )
     return CHECK_QUESTION_ANSWER
 
 
 def handle_solution_attempt(
         update: Update, context: CallbackContext, redis_connect, questions_file
 ):
-    question = redis_connect.get(update.effective_chat.id).decode('utf-8')
-    with open(questions_file) as questions:
-        questions = json.loads(questions.read())
-        answer = questions[question].split('.')[0]
-        if update.message.text == answer:
-            update.message.reply_text(
-                'Верно. Что бы продолжить, нажми "Новый вопрос"'
-            )
-        else:
-            update.message.reply_text(
-                'Не верно. Что бы продолжить, нажми "Новый вопрос"'
-            )
+    answer = redis_connect.get(
+        f'{update.effective_chat.id}-answer'
+    ).decode('utf-8').split('.')[0]
+    if update.message.text == answer:
+        update.message.reply_text(
+            'Верно. Что бы продолжить, нажми "Новый вопрос"'
+        )
+    else:
+        update.message.reply_text(
+            'Не верно. Что бы продолжить, нажми "Новый вопрос"'
+        )
         return QUESTION
 
 
 def handle_losing_attempt(
         update: Update, context: CallbackContext, redis_connect, questions_file
 ):
-    question = redis_connect.get(update.effective_chat.id).decode('utf-8')
-    with open(questions_file) as questions:
-        questions = json.loads(questions.read())
-        answer = questions[question]
-        update.message.reply_text(
-            f'Верный ответ: {answer}. Что бы продолжить, нажми "Новый вопрос"'
-        )
+    answer = redis_connect.get(
+        f'{update.effective_chat.id}-answer'
+    ).decode('utf-8').split('.')[0]
+    update.message.reply_text(
+        f'Верный ответ: {answer}. Что бы продолжить, нажми "Новый вопрос"'
+    )
     return QUESTION
 
 
